@@ -1,5 +1,6 @@
 import subprocess
 import ldap
+from pprint import pprint
 
 nodeList = [ "aphid", "lion", "macaw", "bumblebee", "monkey", "cardinal",
              "newt", "chameleon", "peacock", "cicada", "perch", "cobra",
@@ -14,6 +15,9 @@ def main():
     l.simple_bind("", "")
 
     zoo_users = traverse_zoo()
+    users = count_users(zoo_users)
+
+    pprint(users)
 
     l.unbind_s()
 
@@ -24,11 +28,21 @@ def traverse_zoo():
         zoo_users.append(users.strip('\n').split(' '))
     return zoo_users
 
+def count_users(zoo_users):
+    users = {}
+    for netid in zoo_users:
+        user = search_ldap(netid)
+        if user not in users:
+            users.update({user : 1 })
+        else:
+            users[user] += 1
+    return users
+
 def search_ldap(netid):
     base = 'ou=People,o=yale.edu'
     scope = ldap.SCOPE_SUBTREE
     retrieveAttributes = None
-    sfilter = netid
+    sfilter = 'uid=' + netid
 
     ldap_result_id = l.search(base, scope, sfilter, retrieveAttributes)
     result_set = []
@@ -42,9 +56,14 @@ def search_ldap(netid):
                     ## The appending to list is just for illustration.
                     if result_type == ldap.RES_SEARCH_ENTRY:
                             result_set.append(result_data)
-    print result_set
+
+    # print result_set
+    info = result_set[0][0][1]
+    name = info['cn']
+    year = info['class']
+    college = info['college']
     
-    return result_set
+    return name + ': ' + year + ', ' college
 
 if __name__ == "__main__":
     main()
