@@ -9,11 +9,11 @@ nodeList = [ "aphid", "lion", "macaw", "bumblebee", "monkey", "cardinal",
              "hare", "turtle", "hippo", "viper", "hornet", "jaguar", "zebra",
              "kangaroo", "ladybug"]
 
-def main():
-    # open ldap connection
-    l = ldap.open("directory.yale.edu")
-    l.simple_bind("", "")
+# open ldap connection
+l = ldap.open("directory.yale.edu")
+l.simple_bind("", "")
 
+def main():
     zoo_users = traverse_zoo()
     users = count_users(zoo_users)
 
@@ -25,17 +25,18 @@ def traverse_zoo():
     zoo_users = []
     for node in nodeList:
         users = subprocess.check_output(['ssh', 'hx52@' + node, 'users'])
-        zoo_users.append(users.strip('\n').split(' '))
+        [zoo_users.append(user) for user in users.strip('\n').split(' ')]
     return zoo_users
 
 def count_users(zoo_users):
     users = {}
     for netid in zoo_users:
         user = search_ldap(netid)
-        if user not in users:
-            users.update({user : 1 })
-        else:
-            users[user] += 1
+        if user:
+            if user not in users:
+                users.update({user : 1 })
+            else:
+                users[user] += 1
     return users
 
 def search_ldap(netid):
@@ -57,13 +58,19 @@ def search_ldap(netid):
                     if result_type == ldap.RES_SEARCH_ENTRY:
                             result_set.append(result_data)
 
-    # print result_set
-    info = result_set[0][0][1]
-    name = info['cn']
-    year = info['class']
-    college = info['college']
-    
-    return name + ': ' + year + ', ' college
+    if (result_set != []):
+        # print result_set
+        info = result_set[0][0][1]
+        name = info['cn'][0]
+        year = info['class'][0]
+        if 'college' in info:
+            college = info['college'][0]
+        else:
+            college = info['o'][0]
+        
+        return name + ': ' + year + ', ' + college
+    else:
+        return None
 
 if __name__ == "__main__":
     main()
