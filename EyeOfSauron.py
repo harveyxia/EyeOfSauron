@@ -26,8 +26,11 @@ def main():
 def traverse_zoo():
     zoo_users = []
     for node in nodeList:
-        users = subprocess.check_output(['ssh', 'hx52@' + node, 'users'])
-        [zoo_users.append(user) for user in users.strip('\n').split(' ')]
+        try:
+            users = subprocess.check_output(['ssh', 'hx52@' + node, 'users'])
+            [zoo_users.append(user) for user in users.strip('\n').split(' ')]
+        except subprocess.CalledProcessError, e:
+            print e.output
     return zoo_users
 
 def count_users(zoo_users):
